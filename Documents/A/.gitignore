@@ -1,5 +1,10 @@
-ML\__pycache__
-ML\venv
-backend\__pycache__
-backend\images
-backend\venv
+# Mengabaikan __pycache__ di folder ML dan backend
+ML/__pycache__/
+backend/__pycache__/
+
+# Mengabaikan folder venv
+ML/venv/
+ackend/venv/
+
+# Mengabaikan folder images di backend
+backend/images/

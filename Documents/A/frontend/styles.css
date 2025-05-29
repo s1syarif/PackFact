@@ -95,3 +95,19 @@ h2 {
   background-color: #cce5ff;
   color: #004085;
 }
+
+.ocr-result {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #f4f4f4;
+  border-radius: 5px;
+}
+
+.ocr-result h3 {
+  margin-bottom: 10px;
+}
+
+.ocr-result p {
+  font-size: 16px;
+  color: #333;
+}
