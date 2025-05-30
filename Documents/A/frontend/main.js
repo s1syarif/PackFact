@@ -10,52 +10,50 @@ document.getElementById('upload-button').addEventListener('click', function () {
     // Kirimkan ke backend menggunakan fetch
     fetch('http://127.0.0.1:8000/upload/', {
       method: 'POST',
-      body: formData,  // FormData yang mengandung file
+      body: formData,
     })
       .then((response) => {
-        console.log("Status respons dari backend:", response.status);  // Log status respons
+        console.log("Status respons dari backend:", response.status);
         if (response.ok) {
-          return response.json();  // Mendapatkan respons dari backend dalam format JSON
+          return response.json();
         } else {
           console.error('Gagal mengunggah gambar, status:', response.status);
           throw new Error("Failed to upload image");
         }
       })
       .then((data) => {
-        console.log("Data yang diterima dari backend:", data); // Log data respons
+        console.log("Data yang diterima dari backend:", data);
 
-        // Pastikan respons memiliki properti yang benar
         if (data.error) {
-          console.error('Error:', data.error);  // Log error jika ada
-          showError('Terjadi kesalahan saat mengunggah gambar.'); // Menampilkan error ke halaman
-          return; // Jika ada error, hentikan eksekusi lebih lanjut
+          console.error('Error:', data.error);
+          showError('Terjadi kesalahan saat mengunggah gambar.');
+          return;
         }
 
         console.log('Sukses:', data);
-        showError(''); // Clear error jika upload berhasil
+        showError('');
 
         // Tampilkan gambar setelah diupload
-        const imageUrl = `http://127.0.0.1:8000/images/${data.id}`;  // Pastikan ID ada
+        const imageUrl = `http://127.0.0.1:8000/images/${data.filename}`;
         const imgElement = document.createElement('img');
         imgElement.src = imageUrl;
-        imgElement.width = 300; // Atur ukuran gambar
-        document.getElementById('image-preview').innerHTML = ''; // Hapus gambar sebelumnya
-        document.getElementById('image-preview').appendChild(imgElement); // Tampilkan gambar baru
+        imgElement.width = 300;
+        document.getElementById('image-preview').innerHTML = '';
+        document.getElementById('image-preview').appendChild(imgElement);
 
         // Clear previous OCR result before showing new result
-        document.getElementById('ocr-result').innerHTML = ''; // Clear previous OCR result
+        document.getElementById('ocr-result').innerHTML = '';
 
-        // Menampilkan hasil OCR
         if (data.ocr_result && Array.isArray(data.ocr_result)) {
-          const ocrText = data.ocr_result.join(' ');  // Gabungkan semua hasil OCR
+          const ocrText = data.ocr_result.join(' ');
           document.getElementById('ocr-result').innerHTML = `<h3>Hasil OCR:</h3><p>${ocrText}</p>`;
         } else {
           document.getElementById('ocr-result').innerHTML = `<h3>Hasil OCR:</h3><p>Tidak ada teks yang terdeteksi.</p>`;
         }
       })
       .catch((error) => {
-        console.error('Error:', error);  // Debug: Lihat error dari fetch
-        showError('Terjadi kesalahan saat mengunggah gambar.');  // Menampilkan error ke halaman
+        console.error('Error:', error);
+        showError('Terjadi kesalahan saat mengunggah gambar.');
       });
   } else {
     showError('Silakan pilih gambar terlebih dahulu.');  // Menampilkan error jika gambar belum dipilih
