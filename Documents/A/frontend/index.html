@@ -10,7 +10,7 @@
     <div class="container">
       <h2>Unggah Gambar</h2>
       <input type="file" id="image-upload" accept="image/*" />
-      <button id="upload-button">Unggah Gambar</button>
+      <button id="upload-button" type="button">Unggah Gambar</button>
 
       <!-- Tempat untuk menampilkan pesan sukses atau error -->
       <div id="message" class="alert"></div>
@@ -20,8 +20,20 @@
 
       <!-- Tempat untuk menampilkan hasil OCR -->
       <div id="ocr-result" class="ocr-result"></div>
+
+      <!-- Tambahkan setelah form login/register -->
+      <div id="daily-nutrition-section" style="display:none; margin-top:24px;">
+        <button id="show-daily-nutrition" class="btn-main">Lihat Kebutuhan Harian</button>
+        <div id="daily-nutrition-modal" class="modal-nutrition" style="display:none;"></div>
+      </div>
+
+      <!-- Form login/register akan ditambahkan lewat JS -->
     </div>
 
     <script src="main.js"></script>
+    <!-- Loading Overlay (selalu ada di DOM, tidak dibuat JS) -->
+    <div id="loading-overlay" style="display:none;">
+      <div class="loading-content"><div class="spinner"></div><div class="loading-text">Memproses gambar...</div></div>
+    </div>
   </body>
 </html>

@@ -111,3 +111,285 @@ h2 {
   font-size: 16px;
   color: #333;
 }
+
+/* --- FORM LOGIN & REGISTER --- */
+#register-form, #login-form {
+  max-width: 350px;
+  margin: 40px auto 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  padding: 32px 28px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1.5px solid #e3e8ee;
+}
+#register-form h2, #login-form h2 {
+  text-align: center;
+  margin-bottom: 18px;
+  color: #2d3a4a;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+#register-form .form-group, #login-form .form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+#register-form input, #login-form input {
+  padding: 12px 14px;
+  border: 1.5px solid #d0d7de;
+  border-radius: 7px;
+  font-size: 1.05rem;
+  background: #f8fafc;
+  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  margin-bottom: 10px;
+}
+#register-form input:focus, #login-form input:focus {
+  border: 1.5px solid #4f8cff;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 0 0 2px #cce3ff;
+}
+#register-form button, #login-form button {
+  background: linear-gradient(90deg, #4f8cff 0%, #38b6ff 100%);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 12px 0;
+  font-size: 1.08rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  transition: background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(79,140,255,0.08);
+}
+#register-form button:hover, #login-form button:hover {
+  background: linear-gradient(90deg, #38b6ff 0%, #4f8cff 100%);
+  box-shadow: 0 4px 16px rgba(56,182,255,0.13);
+}
+#register-message.alert, #login-message.alert {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  background: #ffeaea;
+  color: #b30000;
+  font-size: 0.97rem;
+  text-align: center;
+}
+#register-message.alert-success, #login-message.alert-success {
+  background: #eaffea;
+  color: #1a7f37;
+}
+#register-form p, #login-form p {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 1.01rem;
+}
+#register-form a, #login-form a {
+  color: #4f8cff;
+  text-decoration: none;
+  font-weight: 500;
+}
+#register-form a:hover, #login-form a:hover {
+  text-decoration: underline;
+}
+
+/* Styling untuk tabel kandungan gizi */
+.nutrition-table {
+  margin: 20px auto 0 auto;
+  max-width: 350px;
+  background: #f8fafc;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 10px 0 20px 0;
+}
+.nutrition-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+.nutrition-table th, .nutrition-table td {
+  padding: 8px 12px;
+  text-align: left;
+}
+.nutrition-table tr:nth-child(even) {
+  background: #f0f4f8;
+}
+.nutrition-table tr:nth-child(odd) {
+  background: #fff;
+}
+.nutrition-table h3 {
+  text-align: center;
+  color: #007bff;
+  margin-bottom: 10px;
+}
+.nutrition-table td:first-child {
+  font-weight: bold;
+  color: #333;
+}
+.nutrition-table td:last-child {
+  text-align: right;
+  color: #007bff;
+}
+
+/* Styling untuk tombol navigasi utama */
+#main-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+#main-nav button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#main-nav button:hover {
+  background: #0056b3;
+}
+
+/* --- Tambahan styling untuk checkbox ibu hamil & menyusui dan detailnya --- */
+#register-form .form-group label input[type="checkbox"] {
+  margin-right: 6px;
+  accent-color: #4f8cff;
+  transform: scale(1.15);
+}
+#register-form #reg-hamil-detail,
+#register-form #reg-menyusui-detail {
+  background: #f8fafc;
+  border: 1px solid #e3e8ee;
+  border-radius: 7px;
+  padding: 12px 14px 10px 14px;
+  margin-bottom: 10px;
+  margin-top: 0;
+  display: none;
+  transition: all 0.2s;
+}
+#register-form #reg-hamil-detail label,
+#register-form #reg-menyusui-detail label {
+  font-weight: 500;
+  color: #2d3a4a;
+  margin-bottom: 6px;
+}
+#register-form #reg-hamil-detail input,
+#register-form #reg-menyusui-detail input {
+  margin-bottom: 0;
+  width: 100%;
+}
+#register-form .form-group label {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0;
+  margin-right: 12px;
+  font-size: 1.01rem;
+}
+#register-form .form-group {
+  margin-bottom: 16px;
+}
+
+/* --- Loading Overlay & Spinner --- */
+#loading-overlay {
+  all: unset !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(255,255,255,0.85) !important;
+  z-index: 99999 !important;
+  display: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  /* fallback for browsers that ignore flex on fixed: */
+  text-align: center !important;
+}
+#loading-overlay.show {
+  display: flex !important;
+}
+#loading-overlay .loading-content {
+  position: relative !important;
+  left: unset !important;
+  top: unset !important;
+  transform: none !important;
+  margin: auto !important;
+  background: #fff !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.12) !important;
+  padding: 48px 40px 36px 40px !important;
+  text-align: center !important;
+  min-width: 320px !important;
+  min-height: 180px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  width: auto !important;
+  height: auto !important;
+}
+#loading-overlay .spinner {
+  width: 64px !important;
+  height: 64px !important;
+  border: 8px solid #e0e0e0 !important;
+  border-top: 8px solid #1a7f37 !important;
+  border-radius: 50% !important;
+  animation: spin 1s linear infinite !important;
+  margin-bottom: 24px !important;
+}
+#loading-overlay .loading-text {
+  font-size: 1.25rem !important;
+  color: #222 !important;
+  font-weight: 500 !important;
+  margin-top: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  float: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+/* --- END Loading Overlay & Spinner --- */
+
+/* Modal Nutrition */
+.modal-nutrition {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-top: 16px;
+  max-width: 400px;
+}
+
+/* Button Main */
+.btn-main {
+  background: #1a7f37;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 18px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+/* Responsive for mobile */
+@media (max-width: 600px) {
+  #register-form, #login-form {
+    max-width: 98vw;
+    padding: 18px 6vw 18px 6vw;
+  }
+}
