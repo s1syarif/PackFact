@@ -9,3 +9,5 @@ ackend/venv/
 # Mengabaikan folder images di backend
 backend/images/
 backend/alembic/
+backend/alembic.ini
+images/
