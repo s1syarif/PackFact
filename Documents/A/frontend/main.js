@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
       showLoading(); // Tampilkan loading overlay
 
       // Kirimkan ke backend menggunakan fetch
-      fetch('http://127.0.0.1:8000/upload/', {
+      fetch(`${API_BASE}/upload/`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
           showError('');
 
           // Tampilkan gambar setelah diupload
-          const imageUrl = `http://127.0.0.1:8000/images/${data.filename}`;
+          const imageUrl = `http://54.151.129.129:8000/images/${data.filename}`;
           const imgElement = document.createElement('img');
           imgElement.src = imageUrl;
           imgElement.width = 300;
@@ -332,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const usiaKandungan = isHamil ? document.getElementById('reg-usia-kandungan').value : null;
     const isMenyusui = document.getElementById('reg-menyusui').checked;
     const umurAnak = isMenyusui ? document.getElementById('reg-umur-anak').value : null;
-    fetch('http://127.0.0.1:8000/register', {
+    fetch(`${API_BASE}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nama, email, password, bb: Number(bb), tinggi: Number(tinggi), gender, umur: Number(umur), umur_satuan, hamil: isHamil, usia_kandungan: usiaKandungan ? Number(usiaKandungan) : null, menyusui: isMenyusui, umur_anak: umurAnak ? Number(umurAnak) : null, timezone })
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
           msg.className = 'alert alert-success';
           msg.style.display = 'block';
           // Otomatis login setelah register
-          fetch('http://127.0.0.1:8000/login', {
+          fetch(`${API_BASE}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -438,15 +438,20 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    fetch('http://127.0.0.1:8000/login', {
+    fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     })
-      .then(res => res.json().then(data => ({ status: res.status, data })))
-      .then(({ status, data }) => {
+      .then(async res => {
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          data = {};
+        }
         const msg = document.getElementById('login-message');
-        if (status === 200 && data.token) {
+        if (res.status === 200 && data.token) {
           msg.textContent = 'Login berhasil!';
           msg.className = 'alert alert-success';
           msg.style.display = 'block';
@@ -469,9 +474,17 @@ document.addEventListener('DOMContentLoaded', function() {
           msg.style.display = 'block';
         }
       })
-      .catch(() => {
+      .catch(async (err) => {
         const msg = document.getElementById('login-message');
-        msg.textContent = 'Terjadi kesalahan saat login.';
+        // Try to extract error detail from response if possible
+        let errorText = 'Terjadi kesalahan saat login.';
+        if (err && err.response) {
+          try {
+            const data = await err.response.json();
+            if (data && data.detail) errorText = data.detail;
+          } catch {}
+        }
+        msg.textContent = errorText;
         msg.className = 'alert';
         msg.style.display = 'block';
       });
@@ -498,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const token = localStorage.getItem('token');
       if (!token) return;
       // Panggil endpoint khusus kebutuhan harian
-      const res = await fetch('http://localhost:8000/daily-nutrition', {
+      const res = await fetch(`${API_BASE}/daily-nutrition`, {
         method: 'GET',
         headers: { 'Authorization': 'Bearer ' + token }
       });
@@ -533,7 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const token = localStorage.getItem('token');
       if (!token) return;
       // Ambil riwayat scan user
-      const res = await fetch('http://127.0.0.1:8000/scan-history', {
+      const res = await fetch(`${API_BASE}/scan-history`, {
         method: 'GET',
         headers: { 'Authorization': 'Bearer ' + token }
       });
@@ -551,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
       });
       // Ambil kebutuhan harian
-      const kebutuhanRes = await fetch('http://127.0.0.1:8000/daily-nutrition', {
+      const kebutuhanRes = await fetch(`${API_BASE}/daily-nutrition`, {
         method: 'GET',
         headers: { 'Authorization': 'Bearer ' + token }
       });
@@ -661,7 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
   async function showScanHistory() {
     const token = localStorage.getItem('token');
     if (!token) return;
-    const res = await fetch('http://127.0.0.1:8000/scan-history', {
+    const res = await fetch(`${API_BASE}/scan-history`, {
       method: 'GET',
       headers: { 'Authorization': 'Bearer ' + token }
     });
@@ -694,7 +707,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.see-image-btn').forEach(btn => {
       btn.onclick = function() {
         const filename = this.getAttribute('data-filename');
-        const imgUrl = `http://127.0.0.1:8000/images/${filename}`;
+        const imgUrl = `${API_BASE}/images/${filename}`;
         // Modal gambar
         let imgModal = document.getElementById('img-modal');
         if (!imgModal) {
@@ -723,7 +736,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const filename = this.getAttribute('data-filename');
         if (!confirm('Yakin ingin menghapus gambar ini?')) return;
         const token = localStorage.getItem('token');
-        const res = await fetch(`http://127.0.0.1:8000/delete/${filename}`, {
+        const res = await fetch(`${API_BASE}/delete/${filename}`, {
           method: 'DELETE',
           headers: { 'Authorization': 'Bearer ' + token }
         });
@@ -773,3 +786,6 @@ document.addEventListener('DOMContentLoaded', function() {
     renderHealthArticles();
   }
 });
+
+// === KONFIGURASI BASE URL API ===
+const API_BASE = 'http://54.151.129.129:8000';
