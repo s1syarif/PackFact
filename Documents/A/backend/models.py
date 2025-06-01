@@ -29,3 +29,4 @@ class User(Base):
     menyusui = Column(Integer, nullable=True)  # 0/1
     umur_anak = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    timezone = Column(String(40), nullable=True, default="Asia/Jakarta")

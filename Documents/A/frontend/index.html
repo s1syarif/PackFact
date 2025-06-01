@@ -7,29 +7,41 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="container">
-      <h2>Unggah Gambar</h2>
-      <input type="file" id="image-upload" accept="image/*" />
-      <button id="upload-button" type="button">Unggah Gambar</button>
+    <div class="main-layout">
+      <div class="container">
+        <h2>Unggah Gambar</h2>
+        <input type="file" id="image-upload" accept="image/*" />
+        <button id="upload-button" type="button">Unggah Gambar</button>
 
-      <!-- Tempat untuk menampilkan pesan sukses atau error -->
-      <div id="message" class="alert"></div>
+        <!-- Tempat untuk menampilkan pesan sukses atau error -->
+        <div id="message" class="alert"></div>
 
-      <!-- Tempat untuk menampilkan gambar setelah berhasil diunggah -->
-      <div id="image-preview"></div>
+        <!-- Tempat untuk menampilkan gambar setelah berhasil diunggah -->
+        <div id="image-preview"></div>
 
-      <!-- Tempat untuk menampilkan hasil OCR -->
-      <div id="ocr-result" class="ocr-result"></div>
+        <!-- Tempat untuk menampilkan hasil OCR -->
+        <div id="ocr-result" class="ocr-result"></div>
 
-      <!-- Tambahkan setelah form login/register -->
-      <div id="daily-nutrition-section" style="display:none; margin-top:24px;">
-        <button id="show-daily-nutrition" class="btn-main">Lihat Kebutuhan Harian</button>
-        <div id="daily-nutrition-modal" class="modal-nutrition" style="display:none;"></div>
+        <!-- Tambahkan setelah form login/register -->
+        <div id="daily-nutrition-section" style="display:none; margin-top:24px;">
+          <button id="show-daily-nutrition" class="btn-main">Lihat Kebutuhan Harian</button>
+          <button id="show-daily-calculation" class="btn-main" style="margin-left:8px;">Kalkulasi Harian</button>
+          <div id="daily-nutrition-modal" class="modal-nutrition" style="display:none;"></div>
+          <div id="daily-calculation-modal" class="modal-nutrition" style="display:none;"></div>
+        </div>
+
+        <!-- Form login/register akan ditambahkan lewat JS -->
       </div>
-
-      <!-- Form login/register akan ditambahkan lewat JS -->
+      <aside id="health-articles-sidebar">
+        <h3>Artikel Kesehatan Terbaru</h3>
+        <ul id="health-articles-list">
+          <!-- Artikel akan diisi oleh JS -->
+        </ul>
+        <div style="margin-top:8px;font-size:13px;"><a href="https://health.detik.com/berita-detikhealth" target="_blank" rel="noopener">Lihat Semua di DetikHealth &raquo;</a></div>
+      </aside>
     </div>
 
+    <script src="chartjs-loader.js"></script>
     <script src="main.js"></script>
     <!-- Loading Overlay (selalu ada di DOM, tidak dibuat JS) -->
     <div id="loading-overlay" style="display:none;">

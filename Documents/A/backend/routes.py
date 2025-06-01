@@ -4,7 +4,23 @@ from sqlalchemy.orm import Session
 from models import Image, User
 from database import SessionLocal
 import os, shutil, asyncio
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+try:
+    from zoneinfo import ZoneInfo  # Python 3.9+
+    try:
+        WIB_ZONE = ZoneInfo('Asia/Jakarta')
+    except Exception:
+        try:
+            import pytz
+            WIB_ZONE = pytz.timezone('Asia/Jakarta')
+        except Exception:
+            WIB_ZONE = None
+except ImportError:
+    try:
+        import pytz
+        WIB_ZONE = pytz.timezone('Asia/Jakarta')
+    except Exception:
+        WIB_ZONE = None
 import aiohttp
 from passlib.context import CryptContext
 import jwt
@@ -15,7 +31,7 @@ import uuid
 
 router = APIRouter()
 
-IMAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
+IMAGE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images'))
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
 # Password hashing
@@ -78,6 +94,8 @@ async def upload_image(
         unique_id = str(uuid.uuid4())
         unique_filename = f"{unique_id}{ext}"
         file_location = os.path.join(IMAGE_DIR, unique_filename)
+        # Pastikan folder images/ ada sebelum menyimpan file
+        os.makedirs(IMAGE_DIR, exist_ok=True)
         with open(file_location, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
@@ -154,13 +172,10 @@ async def upload_image(
                 'kebutuhan_harian': kebutuhan_val,
                 'status': status
             })
-        # Simpan hasil OCR ke file JSON untuk keperluan history
-        ocr_json_path = os.path.splitext(file_location)[0] + "_ocr.json"
+        # Simpan hasil OCR ke database saja, tidak perlu file JSON
         import json
         image.nutrition_json = json.dumps(kandungan_gizi, ensure_ascii=False)
         db.commit()
-        with open(ocr_json_path, "w", encoding="utf-8") as f:
-            json.dump(kandungan_gizi, f, ensure_ascii=False)
 
         return JSONResponse(content={
             "message": "File uploaded successfully",
@@ -248,6 +263,7 @@ def register(
     usia_kandungan: int = Body(None),
     menyusui: bool = Body(False),
     umur_anak: int = Body(None),
+    timezone: str = Body("Asia/Jakarta"),
     db: Session = Depends(get_db)
 ):
     # Cek email sudah terdaftar
@@ -266,7 +282,8 @@ def register(
         hamil=1 if hamil else 0,
         usia_kandungan=usia_kandungan,
         menyusui=1 if menyusui else 0,
-        umur_anak=umur_anak
+        umur_anak=umur_anak,
+        timezone=timezone
     )
     db.add(user)
     db.commit()
@@ -294,7 +311,8 @@ def login(
         "hamil": bool(user.hamil) if user.hamil is not None else False,
         "usia_kandungan": user.usia_kandungan,
         "menyusui": bool(user.menyusui) if user.menyusui is not None else False,
-        "umur_anak": user.umur_anak
+        "umur_anak": user.umur_anak,
+        "timezone": user.timezone or "Asia/Jakarta"
     }
     token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
     if isinstance(token, bytes):
@@ -439,7 +457,38 @@ async def scan_history(credentials: HTTPAuthorizationCredentials = Depends(secur
     user_id = user_data.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="User tidak ditemukan di token")
-    images = db.query(Image).filter(Image.user_id == user_id).order_by(Image.uploaded_at.desc()).all()
+    # Filter hanya gambar yang diupload hari ini (zona waktu user)
+    user_timezone = user_data.get("timezone") or "Asia/Jakarta"
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo(user_timezone)
+    except Exception:
+        try:
+            import pytz
+            tz = pytz.timezone(user_timezone)
+        except Exception:
+            # fallback manual offset
+            offset = 7
+            if user_timezone == "Asia/Makassar":
+                offset = 8
+            elif user_timezone == "Asia/Jayapura":
+                offset = 9
+            tz = None
+    if tz:
+        today_tz = datetime.now(tz).date()
+        start_tz = datetime.combine(today_tz, datetime.min.time(), tzinfo=tz)
+        end_tz = datetime.combine(today_tz, datetime.max.time(), tzinfo=tz)
+        start_utc = start_tz.astimezone(timezone.utc)
+        end_utc = end_tz.astimezone(timezone.utc)
+    else:
+        today_tz = (datetime.utcnow() + timedelta(hours=offset)).date()
+        start_utc = datetime.combine(today_tz, datetime.min.time()) - timedelta(hours=offset)
+        end_utc = datetime.combine(today_tz, datetime.max.time()) - timedelta(hours=offset)
+    images = db.query(Image).filter(
+        Image.user_id == user_id,
+        Image.uploaded_at >= start_utc,
+        Image.uploaded_at <= end_utc
+    ).order_by(Image.uploaded_at.desc()).all()
     history = []
     for img in images:
         kandungan_gizi = {}
@@ -449,9 +498,47 @@ async def scan_history(credentials: HTTPAuthorizationCredentials = Depends(secur
                 kandungan_gizi = json.loads(img.nutrition_json)
             except:
                 kandungan_gizi = {}
+        uploaded_at_wib = img.uploaded_at
+        if uploaded_at_wib.tzinfo is None:
+            uploaded_at_wib = uploaded_at_wib.replace(tzinfo=timezone.utc)
+        if WIB_ZONE:
+            uploaded_at_wib = uploaded_at_wib.astimezone(WIB_ZONE)
+        else:
+            uploaded_at_wib = uploaded_at_wib + timedelta(hours=7)
         history.append({
             "filename": img.filename,
-            "uploaded_at": img.uploaded_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "uploaded_at": uploaded_at_wib.strftime("%Y-%m-%d %H:%M:%S"),
+            "kandungan_gizi": kandungan_gizi
+        })
+    return {"history": history}
+
+@router.get("/scan-history-all")
+async def scan_history_all(credentials: HTTPAuthorizationCredentials = Depends(security), user_data: dict = Depends(verify_token), db: Session = Depends(get_db)):
+    user_id = user_data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User tidak ditemukan di token")
+    images = db.query(Image).filter(
+        Image.user_id == user_id
+    ).order_by(Image.uploaded_at.desc()).all()
+    history = []
+    for img in images:
+        kandungan_gizi = {}
+        if img.nutrition_json:
+            import json
+            try:
+                kandungan_gizi = json.loads(img.nutrition_json)
+            except:
+                kandungan_gizi = {}
+        uploaded_at_wib = img.uploaded_at
+        if uploaded_at_wib.tzinfo is None:
+            uploaded_at_wib = uploaded_at_wib.replace(tzinfo=timezone.utc)
+        if WIB_ZONE:
+            uploaded_at_wib = uploaded_at_wib.astimezone(WIB_ZONE)
+        else:
+            uploaded_at_wib = uploaded_at_wib + timedelta(hours=7)
+        history.append({
+            "filename": img.filename,
+            "uploaded_at": uploaded_at_wib.strftime("%Y-%m-%d %H:%M:%S"),
             "kandungan_gizi": kandungan_gizi
         })
     return {"history": history}

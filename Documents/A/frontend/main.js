@@ -134,8 +134,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Jika error 401, hapus token dan paksa user login ulang
             handle401();
           } else {
+            // Tampilkan pesan error detail jika ada
+            if (error && error.message && error.message !== 'Failed to upload image') {
+              showError(error.message);
+            } else {
+              // Coba ambil pesan error detail dari response terakhir (jika ada)
+              const errorDiv = document.getElementById('message');
+              if (!errorDiv.textContent) {
+                showError('Terjadi kesalahan saat mengunggah gambar.');
+              }
+            }
             console.error('Error:', error);
-            showError('Terjadi kesalahan saat mengunggah gambar.');
           }
         });
     } else {
@@ -166,6 +175,14 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="form-group"><input type="password" id="reg-password" class="form-input" placeholder="Password" required></div>
     <div class="form-group"><input type="number" id="reg-bb" class="form-input" placeholder="Berat Badan (kg)" required></div>
     <div class="form-group"><input type="number" id="reg-tinggi" class="form-input" placeholder="Tinggi (cm)" required></div>
+    <div class="form-group">
+      <label style="margin-bottom:4px;">Zona Waktu:</label>
+      <select id="reg-timezone" class="form-input" required>
+        <option value="Asia/Jakarta">WIB (Jakarta, GMT+7)</option>
+        <option value="Asia/Makassar">WITA (Makassar, GMT+8)</option>
+        <option value="Asia/Jayapura">WIT (Jayapura, GMT+9)</option>
+      </select>
+    </div>
     <div class="form-group">
       <label style="margin-bottom:4px;">Jenis Kelamin:</label>
       <label style="margin-right:12px;"><input type="radio" name="reg-gender" id="reg-gender-male" value="Laki-laki" checked> Laki-laki</label>
@@ -307,6 +324,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const password = document.getElementById('reg-password').value;
     const bb = document.getElementById('reg-bb').value;
     const tinggi = document.getElementById('reg-tinggi').value;
+    const timezone = document.getElementById('reg-timezone').value;
     const gender = document.getElementById('reg-gender-female').checked ? 'Perempuan' : 'Laki-laki';
     const umur = document.getElementById('reg-umur').value;
     const umur_satuan = document.getElementById('reg-umur-satuan').value;
@@ -317,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetch('http://127.0.0.1:8000/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, email, password, bb: Number(bb), tinggi: Number(tinggi), gender, umur: Number(umur), umur_satuan, hamil: isHamil, usia_kandungan: usiaKandungan ? Number(usiaKandungan) : null, menyusui: isMenyusui, umur_anak: umurAnak ? Number(umurAnak) : null })
+      body: JSON.stringify({ nama, email, password, bb: Number(bb), tinggi: Number(tinggi), gender, umur: Number(umur), umur_satuan, hamil: isHamil, usia_kandungan: usiaKandungan ? Number(usiaKandungan) : null, menyusui: isMenyusui, umur_anak: umurAnak ? Number(umurAnak) : null, timezone })
     })
       .then(res => res.json().then(data => ({ status: res.status, data })))
       .then(({ status, data }) => {
@@ -501,21 +519,118 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Panggil showDailyNutritionButton setelah login sukses
-  function handleLoginSuccess() {
-    // ...existing code...
-    showDailyNutritionButton();
-    // ...existing code...
-  }
-
-  // Update nav state on logout (juga pada error 401 upload)
-  function handle401() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('name');
-    setNavState(false);
-    showForm(loginForm);
-    showError('Sesi login Anda sudah habis, silakan login ulang.');
+  // Event listener Kalkulasi Harian
+  const showCalcBtn = document.getElementById('show-daily-calculation');
+  if (showCalcBtn) {
+    showCalcBtn.addEventListener('click', async () => {
+      // Pastikan Chart.js sudah siap
+      async function waitChartJs() {
+        if (window.Chart) return;
+        await new Promise(r => setTimeout(r, 100));
+        return waitChartJs();
+      }
+      await waitChartJs();
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      // Ambil riwayat scan user
+      const res = await fetch('http://127.0.0.1:8000/scan-history', {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      // Filter hanya yang tanggal hari ini
+      const today = new Date().toISOString().slice(0, 10);
+      const todayHistory = (data.history || []).filter(item => (item.uploaded_at || '').slice(0, 10) === today);
+      // Kalkulasi total gizi hari ini
+      const giziUtama = ['energi','protein','lemak total','karbohidrat','serat','gula','garam'];
+      const totalGizi = {};
+      giziUtama.forEach(k => totalGizi[k] = 0);
+      todayHistory.forEach(item => {
+        giziUtama.forEach(k => {
+          totalGizi[k] += Number(item.kandungan_gizi[k] || 0);
+        });
+      });
+      // Ambil kebutuhan harian
+      const kebutuhanRes = await fetch('http://127.0.0.1:8000/daily-nutrition', {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const kebutuhanData = await kebutuhanRes.json();
+      const kebutuhan = kebutuhanData.kebutuhan_harian || {};
+      // Siapkan data untuk grafik PIE
+      const labels = giziUtama.map(k => k.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase()));
+      const konsumsi = giziUtama.map(k => totalGizi[k]);
+      const kebutuhanArr = giziUtama.map(k => kebutuhan[k] || 0);
+      // Render chart PIE
+      let html = '<h3>Kalkulasi Gizi Hari Ini</h3>';
+      html += '<div style="display:flex;gap:24px;justify-content:center;align-items:center;flex-wrap:wrap">';
+      html += '<div><canvas id="chart-daily-calc-konsumsi" width="220" height="220"></canvas><div style="text-align:center;margin-top:8px;font-size:14px;">Konsumsi Hari Ini</div></div>';
+      html += '<div><canvas id="chart-daily-calc-kebutuhan" width="220" height="220"></canvas><div style="text-align:center;margin-top:8px;font-size:14px;">Kebutuhan Harian</div></div>';
+      html += '</div>';
+      // Tabel perbandingan konsumsi vs kebutuhan
+      html += '<div style="margin-top:18px;overflow-x:auto">';
+      html += '<table style="width:100%;max-width:520px;margin:auto;border-collapse:collapse;font-size:15px;">';
+      html += '<tr><th style="text-align:left;padding:6px 8px;">Gizi</th><th style="padding:6px 8px;">Konsumsi</th><th style="padding:6px 8px;">Kebutuhan</th><th style="padding:6px 8px;">Status</th></tr>';
+      giziUtama.forEach((k, i) => {
+        const kons = konsumsi[i] || 0;
+        const keb = kebutuhanArr[i] || 0;
+        let status = 'Aman', color = '#1a7f37', bg = '#eafbe7';
+        if (keb && kons > keb) { status = 'Melebihi'; color = '#b30000'; bg = '#ffeaea'; }
+        else if (keb && kons < 0.8 * keb) { status = 'Kurang'; color = '#b38b00'; bg = '#fffbe6'; }
+        html += `<tr style="background:${bg}"><td style="padding:6px 8px;">${labels[i]}</td><td style="padding:6px 8px;text-align:right;">${kons}</td><td style="padding:6px 8px;text-align:right;">${keb}</td><td style="padding:6px 8px;"><span style="color:${color};font-weight:600;">${status}</span></td></tr>`;
+      });
+      html += '</table>';
+      html += '<div style="margin-top:8px;font-size:13px;text-align:left;max-width:520px;margin:auto;">';
+      html += '<b>Keterangan:</b> <span style="color:#b30000">Melebihi</span> (>100% kebutuhan), <span style="color:#b38b00">Kurang</span> (<80% kebutuhan), <span style="color:#1a7f37">Aman</span> (80-100% kebutuhan)</div>';
+      html += '</div>';
+      html += '<div style="margin-top:16px;font-size:15px;">';
+      html += '<b>Keterangan Pie:</b> <span style="color:#007bff">Konsumsi</span> vs <span style="color:#1a7f37">Kebutuhan</span> (per gizi utama)</div>';
+      document.getElementById('daily-calculation-modal').innerHTML = html;
+      document.getElementById('daily-calculation-modal').style.display = 'block';
+      document.getElementById('daily-nutrition-modal').style.display = 'none';
+      // Pie chart konsumsi
+      if (window.dailyPieKonsumsi) window.dailyPieKonsumsi.destroy();
+      if (window.dailyPieKebutuhan) window.dailyPieKebutuhan.destroy();
+      const ctxKonsumsi = document.getElementById('chart-daily-calc-konsumsi').getContext('2d');
+      const ctxKebutuhan = document.getElementById('chart-daily-calc-kebutuhan').getContext('2d');
+      window.dailyPieKonsumsi = new Chart(ctxKonsumsi, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: konsumsi,
+            backgroundColor: [
+              '#007bff','#1a7f37','#ffb300','#e74c3c','#8e44ad','#00bcd4','#ff69b4'
+            ],
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            title: { display: false }
+          }
+        }
+      });
+      // Pie chart kebutuhan
+      window.dailyPieKebutuhan = new Chart(ctxKebutuhan, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: kebutuhanArr,
+            backgroundColor: [
+              '#007bff','#1a7f37','#ffb300','#e74c3c','#8e44ad','#00bcd4','#ff69b4'
+            ],
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            title: { display: false }
+          }
+        }
+      });
+    });
   }
 
   // Tambahkan tombol Riwayat Scan di nav
@@ -553,7 +668,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const data = await res.json();
     let html = '<h3>Riwayat Scan</h3>';
     if (data.history && data.history.length > 0) {
-      html += '<table style="width:100%;border-collapse:collapse;"><tr><th>Nama File</th><th>Tanggal Upload</th><th>Nilai Gizi OCR</th><th></th><th></th></tr>';
+      html += '<table style="width:100%;border-collapse:collapse;"><tr><th>Tanggal Upload</th><th>Nilai Gizi OCR</th><th></th><th></th></tr>';
       data.history.forEach(item => {
         // Format nilai gizi utama
         let giziStr = '';
@@ -563,7 +678,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
           giziStr = '<i>-</i>';
         }
-        html += `<tr><td>${item.filename}</td><td>${item.uploaded_at}</td><td style='font-size:13px;'>${giziStr}</td><td><button class='see-image-btn' data-filename='${item.filename}'>Lihat Gambar</button></td><td><button class='delete-image-btn' data-filename='${item.filename}' style='color:#b30000;'>Hapus</button></td></tr>`;
+        html += `<tr><td>${item.uploaded_at}</td><td style='font-size:13px;'>${giziStr}</td><td><button class='see-image-btn' data-filename='${item.filename}'>Lihat Gambar</button></td><td><button class='delete-image-btn' data-filename='${item.filename}' style='color:#b30000;'>Hapus</button></td></tr>`;
       });
       html += '</table>';
     } else {
@@ -625,4 +740,36 @@ document.addEventListener('DOMContentLoaded', function() {
   historyBtn.onclick = function() {
     showScanHistory();
   };
+
+  // ====== SIDEBAR ARTIKEL KESEHATAN DETIK ======
+  const healthArticles = [
+    { title: 'Tes DNA Ungkap Dugaan Penyebab di Balik Kematian Raja Firaun Tutankhamun', url: 'https://health.detik.com/fotohealth/d-7942373/tes-dna-ungkap-dugaan-penyebab-di-balik-kematian-raja-firaun-tutankhamun' },
+    { title: 'Wanti-wanti WHO soal Varian Baru COVID NB.1.8.1, Muncul dan Merebak di 22 Negara', url: 'https://health.detik.com/berita-detikhealth/d-7942437/wanti-wanti-who-soal-varian-baru-covid-nb-1-8-1-muncul-dan-merebak-di-22-negara' },
+    { title: 'Video Mitos atau Fakta: Ada Waktu Terbaik untuk Dapat Vitamin D', url: 'https://health.detik.com/detiktv/d-7942344/video-mitos-atau-fakta-ada-waktu-terbaik-untuk-dapat-vitamin-d' },
+    { title: 'Didominasi Varian MB.1.1, Begini Situasi COVID-19 di Indonesia', url: 'https://health.detik.com/berita-detikhealth/d-7942261/didominasi-varian-mb-1-1-begini-situasi-covid-19-di-indonesia' },
+    { title: 'Berdebar-debar saat Bangun Tidur, Normalkah? Ini Kata Dokter Jantung', url: 'https://health.detik.com/berita-detikhealth/d-7942254/berdebar-debar-saat-bangun-tidur-normalkah-ini-kata-dokter-jantung' },
+    { title: 'Curhat Warga Depok ke CFD Margonda yang Penuh Sesak, Masih Bisa Olahraga?', url: 'https://health.detik.com/berita-detikhealth/d-7942520/curhat-warga-depok-ke-cfd-margonda-yang-penuh-sesak-masih-bisa-olahraga' },
+    { title: 'Kasus COVID-19 \'Meledak\' di Thailand, 65 Ribu Orang Terinfeksi dalam Sepekan', url: 'https://health.detik.com/berita-detikhealth/d-7942325/kasus-covid-19-meledak-di-thailand-65-ribu-orang-terinfeksi-dalam-sepekan' },
+    { title: 'Kebiasaan Sederhana yang Bisa Cegah Kanker Prostat Menurut Studi, Apa Saja?', url: 'https://health.detik.com/berita-detikhealth/d-7939833/kebiasaan-sederhana-yang-bisa-cegah-kanker-prostat-menurut-studi-apa-saja' },
+    { title: 'Menkes Ingin Terapkan di RI, Ini Rahasia Panjang Umur Warga Swedia', url: 'https://health.detik.com/berita-detikhealth/d-7935599/menkes-ingin-terapkan-di-ri-ini-rahasia-panjang-umur-warga-swedia' },
+    { title: 'Sorotan Kemenkes Soal Minyak Babi, Dampak Serius Lemak Jahat bagi Jantung', url: 'https://health.detik.com/berita-detikhealth/d-7942256/sorotan-kemenkes-soal-minyak-babi-dampak-serius-lemak-jahat-bagi-jantung' }
+  ];
+
+  function renderHealthArticles() {
+    const list = document.getElementById('health-articles-list');
+    if (!list) return;
+    list.innerHTML = '';
+    healthArticles.forEach(a => {
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="${a.url}" target="_blank" rel="noopener">${a.title}</a>`;
+      list.appendChild(li);
+    });
+  }
+
+  // Panggil saat DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderHealthArticles);
+  } else {
+    renderHealthArticles();
+  }
 });

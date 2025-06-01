@@ -8,7 +8,7 @@ import os
 app = FastAPI()
 
 # Mount folder images sebagai static files
-IMAGES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
+IMAGES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images'))
 app.mount("/images", StaticFiles(directory=IMAGES_DIR), name="images")
 
 # Setup CORS

@@ -1,13 +1,13 @@
-# Mengabaikan __pycache__ di folder ML dan backend
-ML/__pycache__/
-backend/__pycache__/
+# # Mengabaikan __pycache__ di folder ML dan backend
+# ML/__pycache__/
+# backend/__pycache__/
 
-# Mengabaikan folder venv
-ML/venv/
-ackend/venv/
+# # Mengabaikan folder venv
+# ML/venv/
+# ackend/venv/
 
-# Mengabaikan folder images di backend
-backend/images/
-backend/alembic/
-backend/alembic.ini
-images/
+# # Mengabaikan folder images di backend
+# backend/images/
+# backend/alembic/
+# backend/alembic.ini
+# images/
